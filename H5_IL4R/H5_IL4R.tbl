@@ -1,0 +1,64 @@
+! HADDOCK AIR restraints for H5 and IL4R
+!
+! H5 active residues
+assign ( resid 103  and segid A)
+       (
+        ( resid 104  and segid A)
+       ) 2.0 2.0 0.0
+!
+! H5 passive residues (CDR3 and surrounding)
+assign ( resid 100 and segid A )
+       (
+        ( resid 101 and segid A )
+        ( resid 102 and segid A )
+        ( resid 105 and segid A )
+        ( resid 106 and segid A )
+        ( resid 107 and segid A )
+        ( resid 108 and segid A )
+        ( resid 109 and segid A )
+        ( resid 110 and segid A )
+        ( resid 111 and segid A )
+        ( resid 112 and segid A )
+        ( resid 113 and segid A )
+        ( resid 114 and segid A )
+        ( resid 115 and segid A )
+       ) 2.0 2.0 0.0
+!
+! IL4R passive residues
+assign ( resid 68 and segid B )
+       (
+        ( resid 125 and segid B )
+        ( resid 39 and segid B )
+        ( resid 69 and segid B )
+        ( resid 71 and segid B )
+        ( resid 41 and segid B )
+        ( resid 127 and segid B )
+        ( resid 67 and segid B )
+        ( resid 42 and segid B )
+        ( resid 43 and segid B )
+        ( resid 72 and segid B )
+        ( resid 126 and segid B )
+        ( resid 131 and segid B )
+        ( resid 183 and segid B )
+        ( resid 70 and segid B )
+        ( resid 130 and segid B )
+        ( resid 124 and segid B )
+        ( resid 66 and segid B )
+        ( resid 154 and segid B )
+        ( resid 182 and segid B )
+        ( resid 129 and segid B )
+        ( resid 13 and segid B )
+        ( resid 14 and segid B )
+        ( resid 123 and segid B )
+        ( resid 40 and segid B )
+        ( resid 44 and segid B )
+        ( resid 74 and segid B )
+        ( resid 181 and segid B )
+        ( resid 91 and segid B )
+        ( resid 73 and segid B )
+        ( resid 93 and segid B )
+        ( resid 128 and segid B )
+        ( resid 15 and segid B )
+       ) 2.0 2.0 0.0
+!
+! Add more passive residues for IL4R as needed
