@@ -1,12 +1,11 @@
-shkim@adaws:~/H5_IL4R$ cat mmgbsa.py 
 import subprocess
 import time
 import os
 import csv
 
-pdb_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/H5_IL4R_1"
-output_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/mmgbsa_results"
-top_50_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/H5_IL4R_1_TOP50"
+pdb_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/H5_IL4R_5"
+output_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/mmgbsa_results/H5_IL4R_5"
+top_50_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/H5_IL4R_5_TOP50"
 il4r_chain = 'B'
 
 # 결과를 저장할 디렉토리 생성
@@ -97,17 +96,24 @@ def find_top_50_results():
             subprocess.run(["cp", maegz_file, top_50_directory])
             f_out.write(f"{maegz_file_name},{binding_energy}\n")
 
-# prep_files 내의 모든 maegz 파일에 대해 MM-GBSA 수행
-remaining_files = [f for f in os.listdir(pdb_directory) if f.endswith(".maegz")]
+# 실패한 작업을 먼저 걸러내기
+failed_files = []
+for f in os.listdir(pdb_directory):
+    if f.endswith(".maegz"):
+        base_name = os.path.splitext(f)[0]
+        result_csv = os.path.join(output_directory, f"{base_name}_prime_mmgbsa-out.csv")
+        if not os.path.exists(result_csv):
+            failed_files.append(f)
 
-while remaining_files:
-    filename = remaining_files.pop(0)
+# 실패한 파일들에 대해 MM-GBSA 수행
+while failed_files:
+    filename = failed_files.pop(0)
     maegz_file_path = os.path.join(pdb_directory, filename)
     
     # MM-GBSA 수행
     success = perform_mmgbsa(maegz_file_path)
     if not success:
-        remaining_files.append(filename)  # 실패한 경우 다시 목록에 추가하여 재시도
+        failed_files.append(filename)  # 실패한 경우 다시 목록에 추가하여 재시도
 
 # 전체 결과를 CSV 파일에 저장
 with open(os.path.join(output_directory, "all_results.csv"), 'w', newline='') as f_out:
@@ -117,4 +123,3 @@ with open(os.path.join(output_directory, "all_results.csv"), 'w', newline='') as
 
 # 상위 50개 maegz 파일을 H5_IL4R_1_TOP50 디렉토리로 복사하고 결과를 기록
 find_top_50_results()
-shkim@adaws:~/H5_IL4R$ 
