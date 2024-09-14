@@ -3,14 +3,15 @@ import time
 import os
 import csv
 
-pdb_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/H5_IL4R_5"
-output_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/mmgbsa_results/H5_IL4R_5"
-top_50_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/H5_IL4R_5_TOP50"
-il4r_chain = 'B'
+pdb_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/new/H5_IL4R_1"
+output_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/mmgbsa_results/new/H5_IL4R_1"
+# top_50_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/rf2_1/rf2_1_TOP50"  # 주석 처리
+il4r_chain = 'A'
+num_cores = 20  
 
 # 결과를 저장할 디렉토리 생성
 os.makedirs(output_directory, exist_ok=True)
-os.makedirs(top_50_directory, exist_ok=True)
+# os.makedirs(top_50_directory, exist_ok=True)  # 주석 처리
 
 results = []  # MM-GBSA 결과를 저장할 리스트
 
@@ -21,9 +22,9 @@ def perform_mmgbsa(maegz_file):
     # 작업 디렉토리로 이동
     os.chdir(output_directory)
     
-    # MM-GBSA 계산 스크립트 작성
+    # MM-GBSA 계산 스크립트 작성 (HOST 설정을 통해 코어 개수 지정)
     script_content = f"""#!/bin/bash
-$SCHRODINGER/prime_mmgbsa {maegz_file} -csv_output=yes -ligand="chain. {il4r_chain}" -jobname={maegz_base}_prime_mmgbsa -job_type=ENERGY
+$SCHRODINGER/prime_mmgbsa {maegz_file} -csv_output=yes -ligand="chain. {il4r_chain}" -jobname={maegz_base}_prime_mmgbsa -job_type=ENERGY -HOST localhost:{num_cores}
 """
     # 스크립트 파일명 설정
     script_filename = f"mmgbsa_script_{maegz_base}.sh"
@@ -80,21 +81,22 @@ $SCHRODINGER/prime_mmgbsa {maegz_file} -csv_output=yes -ligand="chain. {il4r_cha
     os.chdir("..")
     return False
 
-def find_top_50_results():
-    """MM-GBSA 결과 파일에서 상위 50개를 찾고, 해당 maegz 파일을 복사"""
-    # Binding energy로 정렬하고 상위 50개 선택
-    results.sort(key=lambda x: x[1])
-    top_50 = results[:50]
+# 주석 처리된 상위 50개 결과 찾기 기능
+# def find_top_results(num_results):
+#     """MM-GBSA 결과 파일에서 상위 N개를 찾고, 해당 maegz 파일을 복사"""
+#     # Binding energy로 정렬하고 상위 N개 선택
+#     results.sort(key=lambda x: x[1])
+#     top_results = results[:num_results]
     
-    # 상위 50개 maegz 파일을 H5_IL4R_1_TOP50 디렉토리로 복사하고 결과도 저장
-    with open(os.path.join(top_50_directory, "top_50_results.csv"), 'w') as f_out:
-        f_out.write("Maegz_File,Binding_Energy\n")
-        for result in top_50:
-            maegz_file = result[0]
-            binding_energy = result[1]
-            maegz_file_name = os.path.basename(maegz_file)
-            subprocess.run(["cp", maegz_file, top_50_directory])
-            f_out.write(f"{maegz_file_name},{binding_energy}\n")
+#     # 상위 N개 maegz 파일을 H5_IL4R_1_TOP50 디렉토리로 복사하고 결과도 저장
+#     with open(os.path.join(top_50_directory, f"top_{num_results}_results.csv"), 'w') as f_out:
+#         f_out.write("Maegz_File,Binding_Energy\n")
+#         for result in top_results:
+#             maegz_file = result[0]
+#             binding_energy = result[1]
+#             maegz_file_name = os.path.basename(maegz_file)
+#             subprocess.run(["cp", maegz_file, top_50_directory])
+#             f_out.write(f"{maegz_file_name},{binding_energy}\n")
 
 # 실패한 작업을 먼저 걸러내기
 failed_files = []
@@ -121,5 +123,6 @@ with open(os.path.join(output_directory, "all_results.csv"), 'w', newline='') as
     writer.writerow(["Maegz_File", "Binding_Energy"])
     writer.writerows(results)
 
-# 상위 50개 maegz 파일을 H5_IL4R_1_TOP50 디렉토리로 복사하고 결과를 기록
-find_top_50_results()
+# 주석 처리된 상위 결과 복사 기능
+# num_top_results = int(input("상위 몇 개의 결과를 저장하시겠습니까? "))
+# find_top_results(num_top_results)

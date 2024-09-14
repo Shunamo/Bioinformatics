@@ -3,8 +3,8 @@ import os
 import gzip
 import shutil
 
-pdb_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/H5_IL4R_5/4_emref"
-output_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/H5_IL4R_5"
+pdb_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/new/H5_IL4R_1/4_emref"
+output_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/new/H5_IL4R_1"
 
 # 결과를 저장할 디렉토리 생성 (이미 존재하는 경우 에러 방지)
 os.makedirs(output_directory, exist_ok=True)
