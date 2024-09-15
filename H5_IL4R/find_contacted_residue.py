@@ -2,110 +2,80 @@ import os
 import subprocess
 import csv
 
-structure_dir = "/Users/shunamo/Desktop/MolecularDynamics/H5_IL4R/structures/PDB"
-output_dir = "ContactedResidues"
-os.makedirs(output_dir, exist_ok=True)
-
-structure_files = [f for f in os.listdir(structure_dir) if f.endswith('.pdb')]
-
-# PyMOL 경로
-pymol_path = "/Applications/PyMOL.app/Contents/bin/pymol"
-
-# 모든 구조의 레지듀 빈도수 저장용
-residue_count_H5 = {}
-residue_count_IL4R = {}
-
-for structure_file in structure_files:
-    if structure_file.startswith("H5"):
-        chain_A = "A"  # H5
-        chain_B = "B"  # IL4R
-    elif structure_file.startswith("cluster"):
-        chain_A = "B"
-        chain_B = "A"
-    elif structure_file.startswith("reinsilico"):
-        chain_A = "C"
-        chain_B = "B"
-    else:
-        continue
-    
+def run_pymol_script(structure_file, pymol_path, script_filename):
     pymol_script = f"""
     load {os.path.join(structure_dir, structure_file)}
-    
-    select contacts, (chain {chain_A} within 4 of chain {chain_B}) or (chain {chain_B} within 4 of chain {chain_A})
-    
-    color red, chain {chain_A}
-    color blue, chain {chain_B}
-    
-    show surface, chain {chain_A}
-    show surface, chain {chain_B}
-    
+
+    # Direct contacts
+    select contacts, (chain A within 4 of chain B) or (chain B within 4 of chain A)
+
+    # Near contacts, excluding direct contacts
+    select near_contacts_IL4R, byres (chain A within 6 of contacts) and not byres contacts
+    select near_contacts_H5, byres (chain B within 6 of contacts) and not byres contacts
+
+    # Visualization and saving
+    color red, chain A
+    color blue, chain B
     show sticks, contacts
-    color yellow, contacts
-    
+    show sticks, near_contacts_IL4R
+    show sticks, near_contacts_H5
+
     png {os.path.join(output_dir, structure_file.replace('.pdb', '_contacts.png'))}, dpi=300
     save {os.path.join(output_dir, structure_file.replace('.pdb', '_contacts.pdb'))}, contacts
+    save {os.path.join(output_dir, structure_file.replace('.pdb', '_near_contacts_IL4R.pdb'))}, near_contacts_IL4R
+    save {os.path.join(output_dir, structure_file.replace('.pdb', '_near_contacts_H5.pdb'))}, near_contacts_H5
     """
-
-    script_filename = os.path.join(output_dir, f"{structure_file.replace('.pdb', '')}_contacts.pml")
     with open(script_filename, 'w') as script_file:
         script_file.write(pymol_script)
-    
-    subprocess.run([pymol_path, "-cq", script_filename])
+    subprocess.run([pymol_path, "-cq", script_filename], check=True)
 
-    residue_list_H5 = []
-    residue_list_IL4R = []
-    with open(os.path.join(output_dir, f"{structure_file.replace('.pdb', '')}_contacts.pdb"), 'r') as pdbfile:
+def extract_residue_data(file_path, chain_ids):
+    residue_lists = {chain: [] for chain in chain_ids}
+    with open(file_path, 'r') as pdbfile:
         for line in pdbfile:
             if line.startswith("ATOM") or line.startswith("HETATM"):
                 resn = line[17:20].strip()
                 resi = line[22:26].strip()
                 chain = line[21].strip()
-                if chain == chain_A:
-                    residue_list_H5.append((resn, resi))
-                elif chain == chain_B:
-                    residue_list_IL4R.append((resn, resi))
-        
-        # 중복 제거, 내림차순 정렬
-        residue_list_H5 = sorted(list(set(residue_list_H5)), key=lambda x: int(x[1]))
-        residue_list_IL4R = sorted(list(set(residue_list_IL4R)), key=lambda x: int(x[1]))
+                if chain in chain_ids:
+                    residue_lists[chain].append((resn, resi))
+    for chain in chain_ids:
+        residue_lists[chain] = sorted(list(set(residue_lists[chain])), key=lambda x: int(x[1]))
+    return residue_lists
 
-        # 빈도수 세기
-        for resn, resi in residue_list_H5:
-            key = (resn, resi)
-            if key in residue_count_H5:
-                residue_count_H5[key] += 1
-            else:
-                residue_count_H5[key] = 1
+structure_dir = "/home/shunamo/Desktop/Bioinformatics/H5_IL4R/pdb_files"
+output_dir = "/home/shunamo/Desktop/Bioinformatics/H5_IL4R/ContactedResidues"
+os.makedirs(output_dir, exist_ok=True)
 
-        for resn, resi in residue_list_IL4R:
-            key = (resn, resi)
-            if key in residue_count_IL4R:
-                residue_count_IL4R[key] += 1
-            else:
-                residue_count_IL4R[key] = 1
-        
+structure_files = [f for f in os.listdir(structure_dir) if f.endswith('.pdb')]
+pymol_path = "/home/shunamo/Desktop/pymol/bin/pymol"
+residue_count = {'H5': {'Direct': {}, 'Near': {}}, 'IL4R': {'Direct': {}, 'Near': {}}}
 
-        structure_name = os.path.splitext(structure_file)[0]
-        with open(os.path.join(output_dir, f"{structure_name}_contacts_residues.csv"), "w", newline="") as csvfile:
-            csvwriter = csv.writer(csvfile)
-            csvwriter.writerow(["Residue Name", "Residue ID", "H5", "IL4R"])
-            
-            for resn, resi in residue_list_H5:
-                csvwriter.writerow([resn, resi, "H5", ""])
-            csvwriter.writerow([])
-            for resn, resi in residue_list_IL4R:
-                csvwriter.writerow([resn, resi, "", "IL4R"])
+for structure_file in structure_files:
+    script_filename = os.path.join(output_dir, f"{structure_file.replace('.pdb', '')}_contacts.pml")
+    run_pymol_script(structure_file, pymol_path, script_filename)
 
-# 전체결과파일
-sorted_residue_count_H5 = sorted(residue_count_H5.items(), key=lambda x: x[1], reverse=True)
-sorted_residue_count_IL4R = sorted(residue_count_IL4R.items(), key=lambda x: x[1], reverse=True)
+    contacts_path = os.path.join(output_dir, structure_file.replace('.pdb', '_contacts.pdb'))
+    near_contacts_IL4R_path = os.path.join(output_dir, structure_file.replace('.pdb', '_near_contacts_IL4R.pdb'))
+    near_contacts_H5_path = os.path.join(output_dir, structure_file.replace('.pdb', '_near_contacts_H5.pdb'))
+
+    contacts_residue_lists = extract_residue_data(contacts_path, ['A', 'B'])
+    near_residue_lists_IL4R = extract_residue_data(near_contacts_IL4R_path, ['A'])
+    near_residue_lists_H5 = extract_residue_data(near_contacts_H5_path, ['B'])
+
+    for resn, resi in contacts_residue_lists['A']:
+        residue_count['IL4R']['Direct'][(resn, resi)] = residue_count['IL4R']['Direct'].get((resn, resi), 0) + 1
+    for resn, resi in contacts_residue_lists['B']:
+        residue_count['H5']['Direct'][(resn, resi)] = residue_count['H5']['Direct'].get((resn, resi), 0) + 1
+    for resn, resi in near_residue_lists_IL4R['A']:
+        residue_count['IL4R']['Near'][(resn, resi)] = residue_count['IL4R']['Near'].get((resn, resi), 0) + 1
+    for resn, resi in near_residue_lists_H5['B']:
+        residue_count['H5']['Near'][(resn, resi)] = residue_count['H5']['Near'].get((resn, resi), 0) + 1
 
 with open(os.path.join(output_dir, "all_contacts_residues_count.csv"), "w", newline="") as csvfile:
     csvwriter = csv.writer(csvfile)
-    csvwriter.writerow(["Residue Name", "Residue ID", "Chain", "Count"])
-    
-    for residue, count in sorted_residue_count_H5:
-        csvwriter.writerow([residue[0], residue[1], "H5", count])
-    
-    for residue, count in sorted_residue_count_IL4R:
-        csvwriter.writerow([residue[0], residue[1], "IL4R", count])
+    csvwriter.writerow(["Residue Name", "Residue ID", "Chain", "Contact Type", "Count"])
+    for chain in residue_count:
+        for contact_type in residue_count[chain]:
+            for (resn, resi), count in sorted(residue_count[chain][contact_type].items(), key=lambda x: x[1], reverse=True):
+                csvwriter.writerow([resn, resi, chain, contact_type, count])

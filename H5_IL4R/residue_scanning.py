@@ -2,13 +2,9 @@ import os
 import time
 import subprocess
 
-# 구조 파일이 있는 디렉토리
 top_50_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/new/H5_IL4R_1"
-
-# 결과가 저장될 디렉토리
 residue_scan_results_dir = "./residue_scanning_result/new/H5_IL4R_1"
 check_results="/home/shkim/H5_IL4R/haddock_H5_IL4R/residue_scanning_result/existing_structures"
-# 결과를 저장할 디렉토리 생성
 os.makedirs(residue_scan_results_dir, exist_ok=True)
 
 # Schrodinger 체인 정보 및 변이 리스트
@@ -20,8 +16,7 @@ B:108 TYR
 B:110 ARG
 B:110 TYR
 """
-num_cores = 40  # 사용할 코어 수
-
+num_cores = 40  
 def perform_residue_scanning(maegz_file, result_csv_path):
     """Residue Scanning을 수행하는 함수"""
     maegz_base = os.path.splitext(os.path.basename(maegz_file))[0]
@@ -44,7 +39,6 @@ $SCHRODINGER/run residue_scanning_backend.py -fast -jobname {maegz_base}_residue
         print(f"Successfully processed {maegz_file}")
         print(process.stdout.decode())
         
-        # 결과 CSV 파일이 생성되었는지 확인
         print(f"Checking for result CSV in: {result_csv_path}")
         for _ in range(60):
             if os.path.exists(result_csv_path):
@@ -56,7 +50,6 @@ $SCHRODINGER/run residue_scanning_backend.py -fast -jobname {maegz_base}_residue
             print(f"Error: {maegz_file} residue scanning likely failed. CSV not found at {result_csv_path}.")
             return False
         
-        # maegz 파일 삭제 (성공 시)
         print(f"Removing processed maegz file: {maegz_file}")
         os.remove(maegz_file)
         
@@ -65,12 +58,11 @@ $SCHRODINGER/run residue_scanning_backend.py -fast -jobname {maegz_base}_residue
         print(f"Error processing {maegz_file}: {e.stderr.decode()}")
         return False
     finally:
-        # 스크립트 파일 및 변이 파일 삭제
         print(f"Cleaning up: {script_filename}, {mutation_file_name}")
         os.remove(script_filename)
         os.remove(mutation_file_name)
 
-# CSV 파일이 없는 구조 목록을 확인
+# CSV 파일없는 구조 확인
 remaining_files = [f for f in os.listdir(top_50_directory) if f.endswith(".maegz")]
 
 failed_files = []
@@ -81,15 +73,13 @@ for filename in remaining_files:
     maegz_base = os.path.splitext(filename)[0]
     result_csv = f"{maegz_base}_residue_scan-results.csv"
     result_csv_path = os.path.join(check_results, result_csv)
-
-    # CSV 파일이 없는 경우에만 리스트에 추가
     if not os.path.exists(result_csv_path):
         print(f"Missing CSV for structure: {filename}")
         failed_files.append(filename)
     else:
         print(f"CSV already exists for structure: {filename}, skipping residue scanning.")
 
-# 실패한 파일에 대해서만 Residue Scanning 수행
+# 실패한 파일에 대해서만 
 while failed_files:
     print(f"Remaining structures to process: {len(failed_files)}")
     print(f"Structures left to process: {failed_files}")
@@ -98,15 +88,13 @@ while failed_files:
     maegz_file_path = os.path.join(top_50_directory, filename)
     result_csv_path = os.path.join(residue_scan_results_dir, f"{os.path.splitext(filename)[0]}_residue_scan-results.csv")
     
-    # Residue Scanning 수행
     success = perform_residue_scanning(maegz_file_path, result_csv_path)
     if not success:
         print(f"Retrying Residue Scanning for {filename}")
         failed_files.append(filename)  # 실패한 경우 다시 리스트에 추가
     
-    # 모든 파일에 대해 Residue Scanning이 성공하면 루프 종료
     if not failed_files:
         print("All residue scanning operations completed successfully.")
     else:
         print("Some residue scanning operations failed. Retrying...")
-        time.sleep(60)  # 실패한 경우 60초 대기 후 다시 시도
+        time.sleep(60) 

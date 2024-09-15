@@ -2,11 +2,9 @@ import os
 import gzip
 import shutil
 
-# 경로 설정
 pdb_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/existing_structures"
 output_directory = "/home/shkim/H5_IL4R/haddock_H5_IL4R/prep_files/modified_structures"
 
-# 결과를 저장할 디렉토리 생성
 os.makedirs(output_directory, exist_ok=True)
 
 def change_chain_in_pdb(pdb_file, old_chain, new_chain):
@@ -44,12 +42,10 @@ def compress_pdb(pdb_file):
             shutil.copyfileobj(f_in, f_out)
     return maegz_file
 
-# 파일을 처리
 for filename in os.listdir(pdb_directory):
     if filename.endswith(".maegz"):
         maegz_file_path = os.path.join(pdb_directory, filename)
         
-        # maegz 파일 해제하여 PDB 파일 추출
         pdb_file = decompress_maegz(maegz_file_path)
 
         # 체인 변경
@@ -63,13 +59,10 @@ for filename in os.listdir(pdb_directory):
             change_chain_in_pdb(pdb_file, 'B', 'A')  # IL4R를 A로
             change_chain_in_pdb(pdb_file, 'A', 'B')  # H5를 B로
 
-        # PDB 파일을 다시 maegz 파일로 압축
         new_maegz_file = compress_pdb(pdb_file)
         
-        # 수정된 maegz 파일을 출력 디렉토리에 저장
         shutil.move(new_maegz_file, os.path.join(output_directory, os.path.basename(new_maegz_file)))
 
-        # 원본 PDB 파일 삭제
         os.remove(pdb_file)
 
 print("체인 변경 및 파일 압축이 완료되었습니다.")
